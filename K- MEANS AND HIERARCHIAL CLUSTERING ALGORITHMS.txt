@@ -1,0 +1,152 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import (
+    LabelEncoder,
+    StandardScaler
+)
+
+from sklearn.cluster import KMeans
+
+from sklearn.metrics import (
+    classification_report,
+    accuracy_score
+)
+
+from scipy.cluster.hierarchy import (
+    dendrogram,
+    linkage,
+    fcluster
+)
+
+df = pd.read_csv(
+    "/mnt/data/credit_risk_dataset.csv"
+)
+
+df = df.dropna()
+
+le = LabelEncoder()
+
+for col in df.select_dtypes(include=['object']).columns:
+
+    df[col] = le.fit_transform(df[col])
+
+target = 'loan_status'
+
+X = df.drop(columns=[target])
+y = df[target]
+
+scaler = StandardScaler()
+
+X_scaled = scaler.fit_transform(X)
+
+wcss = []
+
+for i in range(1, 11):
+
+    kmeans = KMeans(
+        n_clusters=i,
+        random_state=42
+    )
+
+    kmeans.fit(X_scaled)
+
+    wcss.append(kmeans.inertia_)
+
+plt.figure()
+
+plt.plot(
+    range(1, 11),
+    wcss,
+    marker='o'
+)
+
+plt.title("Elbow Method (K-Means)")
+plt.xlabel("Number of Clusters")
+plt.ylabel("WCSS")
+
+plt.show()
+
+kmeans = KMeans(
+    n_clusters=3,
+    random_state=42
+)
+
+clusters_kmeans = kmeans.fit_predict(X_scaled)
+
+mapping = {}
+
+for i in np.unique(clusters_kmeans):
+
+    mapping[i] = y[
+        clusters_kmeans == i
+    ].mode()[0]
+
+y_pred_kmeans = [
+    mapping[c]
+    for c in clusters_kmeans
+]
+
+print("\n===== K-MEANS RESULTS =====")
+
+print(
+    "Accuracy:",
+    accuracy_score(y, y_pred_kmeans)
+)
+
+print(
+    "Classification Report:\n",
+    classification_report(y, y_pred_kmeans)
+)
+
+linked = linkage(
+    X_scaled[:100],
+    method='ward'
+)
+
+plt.figure(figsize=(12, 6))
+
+dendrogram(linked)
+
+plt.title("Dendrogram (Hierarchical Clustering)")
+plt.xlabel("Data Points")
+plt.ylabel("Distance")
+
+plt.show()
+
+clusters_hier = fcluster(
+    linked,
+    t=3,
+    criterion='maxclust'
+)
+
+y_subset = y.iloc[:100]
+
+mapping_hier = {}
+
+for i in np.unique(clusters_hier):
+
+    mapping_hier[i] = y_subset[
+        clusters_hier == i
+    ].mode()[0]
+
+y_pred_hier = [
+    mapping_hier[c]
+    for c in clusters_hier
+]
+
+print("\n===== HIERARCHICAL RESULTS =====")
+
+print(
+    "Accuracy:",
+    accuracy_score(y_subset, y_pred_hier)
+)
+
+print(
+    "Classification Report:\n",
+    classification_report(
+        y_subset,
+        y_pred_hier
+    )
+)

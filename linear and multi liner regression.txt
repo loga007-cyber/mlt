@@ -1,0 +1,120 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+# Load dataset
+df = pd.read_csv("C:/Users/Admin/OneDrive/Desktop/dataset/GHI_Report.csv")
+
+# Define target and feature columns
+target_column = 'H_Score'
+
+simple_feature = ['Economy']
+multiple_features = ['Economy', 'Fam', 'Health', 'Freedom']
+
+# Target variable
+Y = df[target_column].values
+
+# =========================================================
+# SIMPLE LINEAR REGRESSION
+# =========================================================
+
+X_simple = df[simple_feature].values
+
+# Create and train model
+simple_model = LinearRegression()
+simple_model.fit(X_simple, Y)
+
+# Prediction
+Y_simple_pred = simple_model.predict(X_simple)
+
+# Evaluation metrics
+rmse_simple = np.sqrt(mean_squared_error(Y, Y_simple_pred))
+r2_simple = simple_model.score(X_simple, Y)
+
+# Display results
+print("\n--- Simple Linear Regression ---")
+print("Coefficient (Slope):", simple_model.coef_[0])
+print("Intercept:", simple_model.intercept_)
+print("RMSE:", rmse_simple)
+print("R² Score:", r2_simple)
+
+# Plot Simple Linear Regression
+plt.figure()
+
+plt.scatter(
+    X_simple,
+    Y,
+    marker='*',
+    label="Actual Data"
+)
+
+plt.plot(
+    X_simple,
+    Y_simple_pred,
+    'b-',
+    label="Regression Line"
+)
+
+plt.xlabel("Economy")
+plt.ylabel("H_Score")
+plt.title("Simple Linear Regression")
+
+plt.legend()
+plt.show()
+
+# =========================================================
+# MULTIPLE LINEAR REGRESSION
+# =========================================================
+
+X_multi = df[multiple_features].values
+
+# Create and train model
+multi_model = LinearRegression()
+multi_model.fit(X_multi, Y)
+
+# Prediction
+Y_multi_pred = multi_model.predict(X_multi)
+
+# Evaluation metrics
+rmse_multi = np.sqrt(mean_squared_error(Y, Y_multi_pred))
+r2_multi = multi_model.score(X_multi, Y)
+
+# Display results
+print("\n--- Multiple Linear Regression ---")
+
+for feature, coef in zip(multiple_features, multi_model.coef_):
+    print(f"Coefficient for {feature}: {coef}")
+
+print("Intercept:", multi_model.intercept_)
+print("RMSE:", rmse_multi)
+print("R² Score:", r2_multi)
+
+# Plot Multiple Linear Regression
+# Actual vs Predicted
+
+plt.figure()
+
+plt.scatter(
+    Y,
+    Y_multi_pred,
+    marker='o'
+)
+
+plt.xlabel("Actual H_Score")
+plt.ylabel("Predicted H_Score")
+
+plt.title("Multiple Linear Regression: Actual vs Predicted")
+
+# Reference line
+plt.plot(
+    [Y.min(), Y.max()],
+    [Y.min(), Y.max()],
+    'r--'
+)
+
+plt.show()
+
+print("\nVisualization completed successfully ✅")

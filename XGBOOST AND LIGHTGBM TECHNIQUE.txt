@@ -1,0 +1,132 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import (
+    confusion_matrix,
+    classification_report,
+    accuracy_score
+)
+
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+
+df = pd.read_csv("MBA.csv")
+
+df.columns = df.columns.str.strip()
+
+target_col = None
+
+for col in df.columns:
+
+    if col.lower() == 'admission':
+        target_col = col
+        break
+
+if target_col is None:
+    raise ValueError("Admission column not found")
+
+df[target_col] = (
+    df[target_col]
+    .astype(str)
+    .str.strip()
+    .str.lower()
+)
+
+df = df[
+    df[target_col].isin(['admit', 'waitlist'])
+]
+
+df['Status'] = df[target_col].map({
+    'waitlist': 0,
+    'admit': 1
+})
+
+df = df.drop(target_col, axis=1)
+
+for col in df.select_dtypes(include='object').columns:
+
+    df[col] = LabelEncoder().fit_transform(df[col])
+
+X = df.drop('Status', axis=1)
+y = df['Status']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+xgb_model = XGBClassifier(
+    use_label_encoder=False,
+    eval_metric='logloss'
+)
+
+xgb_model.fit(X_train, y_train)
+
+lgb_model = LGBMClassifier()
+
+lgb_model.fit(X_train, y_train)
+
+y_pred_xgb = xgb_model.predict(X_test)
+
+cm_xgb = confusion_matrix(y_test, y_pred_xgb)
+
+plt.figure(figsize=(5, 4))
+
+sns.heatmap(
+    cm_xgb,
+    annot=True,
+    fmt='d',
+    cmap='coolwarm',
+    xticklabels=['Waitlist', 'Admit'],
+    yticklabels=['Waitlist', 'Admit']
+)
+
+plt.title("XGBoost Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+
+plt.show()
+
+print("\nXGBoost Report:\n")
+
+print(classification_report(y_test, y_pred_xgb))
+
+print(
+    "XGBoost Accuracy:",
+    accuracy_score(y_test, y_pred_xgb)
+)
+
+y_pred_lgb = lgb_model.predict(X_test)
+
+cm_lgb = confusion_matrix(y_test, y_pred_lgb)
+
+plt.figure(figsize=(5, 4))
+
+sns.heatmap(
+    cm_lgb,
+    annot=True,
+    fmt='d',
+    cmap='viridis',
+    xticklabels=['Waitlist', 'Admit'],
+    yticklabels=['Waitlist', 'Admit']
+)
+
+plt.title("LightGBM Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+
+plt.show()
+
+print("\nLightGBM Report:\n")
+
+print(classification_report(y_test, y_pred_lgb))
+
+print(
+    "LightGBM Accuracy:",
+    accuracy_score(y_test, y_pred_lgb)
+)

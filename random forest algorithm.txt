@@ -1,0 +1,60 @@
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    confusion_matrix,
+    accuracy_score
+)
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(
+    "/Users/sairam/Downloads/ev_charging_patterns.csv"
+)
+
+target_column = "User Type"
+
+X = df.drop(target_column, axis=1)
+y = df[target_column]
+
+X = pd.get_dummies(X)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+model = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+print("Accuracy:", accuracy_score(y_test, y_pred))
+
+cm = confusion_matrix(y_test, y_pred)
+
+plt.figure()
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt='d',
+    cmap='Blues',
+    xticklabels=model.classes_,
+    yticklabels=model.classes_
+)
+
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+
+plt.title("Confusion Matrix - Random Forest")
+
+plt.show()
